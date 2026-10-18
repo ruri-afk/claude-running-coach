@@ -13,6 +13,10 @@ Claude Running Race Coach uses Claude Code's Skills framework to provide intelli
 - Weekly training analysis and coaching feedback
 - Scientific pace calculation and workout planning
 
+## Run Coach App (voice-guided runs)
+
+`docs/run/` is a small web app for Chrome on Android that talks you through run-walk sessions using live heart rate from a WHOOP (turn on **Heart Rate Broadcast** in the WHOOP app). It says when to walk and jog to stay in Zone 2, gives time, heart rate and zone updates, has the 8-week base plan built in, and can copy a run summary to paste into Claude for coaching. Once GitHub Pages serves `docs/`, open `/run/` on your phone and add it to your home screen. Add `?sim=1` to the URL to try it with a simulated heart rate.
+
 ## Project Structure
 
 ```

@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>Run Coach</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #0f1115; --card: #1a1d24; --line: #2a2f3a; --text: #f2f4f8; --muted: #9aa3b2;
+    --accent: #ff7a1a; --z0: #4b5263; --z1: #8a94a6; --z2: #3b8cf6; --z3: #22c55e; --z4: #f59e0b; --z5: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 16px); }
+  main { max-width: 520px; margin: 0 auto; }
+  [hidden] { display: none !important; }
+  h1 { font-size: 1.6rem; margin: 20px 0 4px; }
+  h2 { font-size: 1rem; color: var(--muted); font-weight: 600; text-transform: uppercase;
+    letter-spacing: .06em; margin: 28px 0 10px; }
+  p { line-height: 1.45; }
+  .muted { color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin: 12px 0; }
+  button { font: inherit; border: 0; border-radius: 12px; padding: 14px 18px; cursor: pointer;
+    background: var(--line); color: var(--text); font-weight: 600; }
+  button.primary { background: var(--accent); color: #111; }
+  button.big { width: 100%; font-size: 1.15rem; padding: 18px; }
+  button:disabled { opacity: .5; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row > button { flex: 1; }
+  .week { display: grid; grid-template-columns: 70px repeat(3, 1fr); gap: 8px; align-items: center; margin: 8px 0; }
+  .chip { padding: 10px 0; border-radius: 10px; background: var(--line); text-align: center; font-weight: 600; }
+  .chip.done { background: #183a26; color: #7ee2a0; }
+  .chip.sel { outline: 2px solid var(--accent); }
+  .status { display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--z0); flex: none; }
+  .dot.on { background: var(--z3); }
+  label { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0;
+    border-bottom: 1px solid var(--line); }
+  input[type=number] { width: 90px; font: inherit; padding: 8px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text); text-align: right; }
+  input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--accent); }
+  .history-item { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+  .history-item button { padding: 8px 12px; font-size: .9rem; }
+
+  /* run screen */
+  #run { text-align: center; }
+  .run-top { display: flex; justify-content: space-between; margin-top: 16px; color: var(--muted); font-size: .95rem; }
+  .cue { font-size: 3.6rem; font-weight: 800; letter-spacing: .02em; margin: 18px 0 2px; }
+  .cue-sub { color: var(--muted); min-height: 1.4em; }
+  .hr { font-size: 7rem; font-weight: 800; line-height: 1; margin-top: 18px; font-variant-numeric: tabular-nums; }
+  .zone { display: inline-block; margin-top: 8px; padding: 6px 16px; border-radius: 999px; font-weight: 700; background: var(--z0); }
+  .bar { height: 10px; border-radius: 5px; background: var(--line); margin: 22px 0 8px; overflow: hidden; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .5s; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+  .stat b { display: block; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: .8rem; }
+  .said { min-height: 2.8em; color: var(--muted); font-style: italic; margin: 8px 0 16px; }
+  #lock { position: fixed; inset: 0; background: rgba(5,6,8,.92); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 10; touch-action: none; user-select: none; }
+  #lock .hr { font-size: 6rem; }
+  #lock .hint { color: var(--muted); margin-top: 30px; }
+  #lockRing { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--line); margin-top: 20px;
+    display: flex; align-items: center; justify-content: center; color: var(--muted); }
+  #lockRing.holding { border-color: var(--accent); transition: border-color 1.5s; }
+  pre.summary { text-align: left; white-space: pre-wrap; background: var(--card); padding: 14px; border-radius: 12px;
+    border: 1px solid var(--line); font-size: .9rem; }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<main id="home">
+  <h1>🏃‍♀️ Run Coach</h1>
+  <p class="muted">Voice-guided run-walk, driven by your WHOOP heart rate.</p>
+
+  <div class="card">
+    <div class="status"><span class="dot" id="hrDot"></span><span id="hrStatus">Heart rate not connected</span></div>
+    <div class="row" style="margin-top:12px">
+      <button id="connectBtn">Connect WHOOP</button>
+      <button id="voiceTestBtn">Test voice</button>
+    </div>
+    <p class="muted" style="font-size:.85rem;margin-bottom:0">First turn on <b>Heart Rate Broadcast</b> in the WHOOP app (device settings).</p>
+  </div>
+
+  <h2>Session</h2>
+  <div class="card">
+    <div id="selLabel" style="font-weight:700;font-size:1.15rem"></div>
+    <div id="selDesc" class="muted" style="margin:4px 0 14px"></div>
+    <button class="primary big" id="startBtn">Start</button>
+  </div>
+
+  <h2>8-week plan</h2>
+  <div id="planGrid"></div>
+
+  <h2>Free run</h2>
+  <div class="card row">
+    <label style="border:0;flex:1;padding:0">Minutes <input type="number" id="freeMin" value="30" min="5" max="120"></label>
+    <button id="freeBtn">Select</button>
+  </div>
+
+  <h2>History</h2>
+  <div id="history"><p class="muted">No runs yet.</p></div>
+
+  <div class="row" style="margin-top:24px"><button id="settingsBtn">Settings</button></div>
+</main>
+
+<!-- RUN -->
+<main id="run" hidden>
+  <div class="run-top"><span id="runLabel"></span><span id="segLabel"></span></div>
+  <div class="cue" id="cue">READY</div>
+  <div class="cue-sub" id="cueSub"></div>
+  <div class="hr" id="hrBig">--</div>
+  <div class="zone" id="zoneBadge">no HR</div>
+  <div class="bar"><div id="progress"></div></div>
+  <div class="stats">
+    <div class="stat"><b id="elapsed">0:00</b><span>elapsed</span></div>
+    <div class="stat"><b id="remaining">0:00</b><span>to go</span></div>
+    <div class="stat"><b id="dist">0.00</b><span>km</span></div>
+  </div>
+  <div class="said" id="said"></div>
+  <div id="runControls">
+    <div class="row">
+      <button id="pauseBtn">Pause</button>
+      <button id="lockBtn">Pocket lock</button>
+      <button id="endBtn">End</button>
+    </div>
+    <div class="row" style="margin-top:10px"><button id="reconnectBtn" hidden>Reconnect WHOOP</button></div>
+  </div>
+  <div id="finished" hidden>
+    <pre class="summary" id="summaryText"></pre>
+    <div class="row">
+      <button class="primary" id="copySummaryBtn">Copy for coach</button>
+      <button id="doneBtn">Done</button>
+    </div>
+  </div>
+</main>
+
+<div id="lock" hidden>
+  <div class="hr" id="lockHr">--</div>
+  <div class="cue" id="lockCue" style="font-size:2.4rem"></div>
+  <div id="lockRing">hold</div>
+  <div class="hint">Press and hold the circle to unlock</div>
+</div>
+
+<!-- SETTINGS -->
+<main id="settings" hidden>
+  <h1>Settings</h1>
+  <h2>Heart rate zones (min bpm, from WHOOP)</h2>
+  <div class="card" id="zoneFields"></div>
+  <h2>Run-walk</h2>
+  <div class="card">
+    <label>Walk when HR reaches <input type="number" data-k="walkAt"></label>
+    <label>Jog again when HR drops to <input type="number" data-k="jogAt"></label>
+    <label>Aerobic test target HR <input type="number" data-k="testTarget"></label>
+    <label>No-HR fallback: jog seconds <input type="number" data-k="fbJog"></label>
+    <label style="border:0">No-HR fallback: walk seconds <input type="number" data-k="fbWalk"></label>
+  </div>
+  <h2>Voice</h2>
+  <div class="card">
+    <label>Voice cues <input type="checkbox" data-k="voice"></label>
+    <label>Time updates <input type="checkbox" data-k="timeCues"></label>
+    <label>…every (min) <input type="number" data-k="timeEvery"></label>
+    <label>Heart rate & zone updates <input type="checkbox" data-k="hrCues"></label>
+    <label>…every (min) <input type="number" data-k="hrEvery"></label>
+    <label style="border:0">Encouragement <input type="checkbox" data-k="enc"></label>
+  </div>
+  <h2>Other</h2>
+  <div class="card">
+    <label style="border:0">Track distance with GPS <input type="checkbox" data-k="gps"></label>
+  </div>
+  <div class="row"><button class="primary" id="saveSettingsBtn">Save</button><button id="resetSettingsBtn">Reset to defaults</button></div>
+  <h2>Data</h2>
+  <div class="row"><button id="clearHistoryBtn">Clear run history</button></div>
+</main>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const SIM = params.has("sim");            // ?sim=1 fakes a heart rate strap for testing
+const SPEED = Number(params.get("speed")) || 1;
+
+// ---------------------------------------------------------------- storage
+const store = {
+  get(key, fallback) { try { return JSON.parse(localStorage.getItem("runcoach." + key)) ?? fallback; } catch { return fallback; } },
+  set(key, value) { try { localStorage.setItem("runcoach." + key, JSON.stringify(value)); } catch {} },
+};
+const DEFAULTS = {
+  z1: 119, z2: 145, z3: 158, z4: 171, z5: 183,
+  walkAt: 157, jogAt: 147, testTarget: 152, fbJog: 60, fbWalk: 120,
+  voice: true, timeCues: true, timeEvery: 5, hrCues: true, hrEvery: 3, enc: true, gps: true,
+};
+let settings = { ...DEFAULTS, ...store.get("settings", {}) };
+let history = store.get("history", []);
+
+// ---------------------------------------------------------------- plan
+const RW = min => ({ kind: "runwalk", min });
+const TEST = [{ kind: "warmup", min: 10 }, { kind: "steady", min: 20 }];
+const STRIDES = reps => ({ kind: "strides", reps });
+const FUN = min => [RW(10), { kind: "free", min }, RW(10)];
+const PLAN = [
+  { A: [RW(25)], B: TEST, C: [RW(30)] },
+  { A: [RW(25)], B: [RW(25)], C: [RW(35)] },
+  { A: [RW(25)], B: [RW(30)], C: [RW(40)] },
+  { A: [RW(20)], B: TEST, C: [{ kind: "walk", min: 20 }] },
+  { A: [RW(30), STRIDES(4)], B: [RW(30)], C: [RW(40)] },
+  { A: [RW(30), STRIDES(5)], B: FUN(10), C: [RW(45)] },
+  { A: [RW(30), STRIDES(6)], B: FUN(12), C: [RW(50)] },
+  { A: [RW(25)], B: TEST, C: [RW(30)] },
+];
+const STRIDE_ON = 20, STRIDE_CYCLE = 90;
+const segSeconds = s => s.kind === "strides" ? s.reps * STRIDE_CYCLE : s.min * 60;
+
+function describeSeg(s) {
+  switch (s.kind) {
+    case "runwalk": return `${s.min} min run-walk`;
+    case "warmup": return `${s.min} min warm-up`;
+    case "steady": return `${s.min} min aerobic test at ~${settings.testTarget}`;
+    case "strides": return `${s.reps} strides`;
+    case "free": return `${s.min} min fun run`;
+    case "walk": return `${s.min} min easy walk`;
+  }
+}
+const describe = segs => segs.map(describeSeg).join(" + ");
+const doneKeys = () => new Set(history.filter(r => r.planKey && r.completed).map(r => r.planKey));
+
+function nextPlanKey() {
+  const done = doneKeys();
+  for (let w = 0; w < PLAN.length; w++)
+    for (const s of "ABC") if (!done.has(`${w + 1}${s}`)) return `${w + 1}${s}`;
+  return null;
+}
+
+let selected = null;
+function selectPlan(key) {
+  const week = Number(key.slice(0, -1)), letter = key.slice(-1);
+  selected = { planKey: key, label: `Week ${week} · Session ${letter}`, segs: PLAN[week - 1][letter] };
+  renderHome();
+}
+function selectFree(min) {
+  selected = { planKey: null, label: `Free run · ${min} min`, segs: [RW(min)] };
+  renderHome();
+}
+
+// ---------------------------------------------------------------- zones
+function zoneOf(hr) {
+  if (!hr) return 0;
+  if (hr >= settings.z5) return 5;
+  if (hr >= settings.z4) return 4;
+  if (hr >= settings.z3) return 3;
+  if (hr >= settings.z2) return 2;
+  if (hr >= settings.z1) return 1;
+  return 0;
+}
+
+// ---------------------------------------------------------------- voice
+let voice = null;
+function pickVoice() {
+  const voices = speechSynthesis.getVoices();
+  voice = voices.find(v => /en[-_]GB/i.test(v.lang) && /female|google/i.test(v.name))
+       || voices.find(v => /^en/i.test(v.lang)) || null;
+}
+if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+
+function say(text, urgent = false) {
+  $("said").textContent = `“${text}”`;
+  if (R) R.lastSay = R.s;
+  if (!settings.voice || !("speechSynthesis" in window)) return;
+  if (urgent) speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  if (voice) u.voice = voice;
+  u.rate = 1.0;
+  speechSynthesis.speak(u);
+}
+
+const CHEERS = [
+  "You're doing great. Nice and relaxed.", "Easy miles build big engines. Keep it up.",
+  "Relax your shoulders and keep breathing.", "This is exactly how aerobic fitness is built.",
+  "Slow is smooth, smooth is fast. Good work.", "Look up, enjoy the view. You've got this.",
+  "Every minute here is making your heart stronger.", "Light steps, soft landing. Lovely.",
+];
+
+// ---------------------------------------------------------------- heart rate (Web Bluetooth)
+const hr = { value: null, at: 0, device: null, name: "", retries: 0 };
+
+function setHrStatus() {
+  const connected = SIM || (hr.device && hr.device.gatt.connected);
+  $("hrDot").classList.toggle("on", !!connected);
+  $("hrStatus").textContent = connected
+    ? `Connected: ${hr.name}${hr.value ? ` · ${hr.value} bpm` : ""}`
+    : hr.device ? "Heart rate disconnected – reconnecting…" : "Heart rate not connected";
+  $("connectBtn").textContent = connected ? "Connected ✓" : "Connect WHOOP";
+  $("reconnectBtn").hidden = !!connected || SIM;
+}
+
+function onHeartRate(value) {
+  hr.value = value;
+  hr.at = performance.now();
+  setHrStatus();
+}
+
+async function connectHr() {
+  if (SIM) { hr.name = "Simulator"; onHeartRate(90); return; }
+  if (!navigator.bluetooth) {
+    alert("Bluetooth isn't available here. Open this page in Chrome on Android.");
+    return;
+  }
+  try {
+    hr.device = await navigator.bluetooth.requestDevice({ filters: [{ services: ["heart_rate"] }] });
+    hr.name = hr.device.name || "Heart rate strap";
+    hr.device.addEventListener("gattserverdisconnected", onDisconnected);
+    await connectGatt();
+  } catch (e) {
+    if (e.name !== "NotFoundError") alert("Couldn't connect: " + e.message);
+  }
+  setHrStatus();
+}
+
+async function connectGatt() {
+  const server = await hr.device.gatt.connect();
+  const service = await server.getPrimaryService("heart_rate");
+  const ch = await service.getCharacteristic("heart_rate_measurement");
+  ch.addEventListener("characteristicvaluechanged", e => {
+    const dv = e.target.value;
+    onHeartRate(dv.getUint8(0) & 1 ? dv.getUint16(1, true) : dv.getUint8(1));
+  });
+  await ch.startNotifications();
+  hr.retries = 0;
+  setHrStatus();
+}
+
+function onDisconnected() {
+  setHrStatus();
+  if (hr.retries++ > 20) return;
+  setTimeout(() => connectGatt().catch(onDisconnected), Math.min(2000 * hr.retries, 10000));
+}
+
+const hrFresh = () => hr.value && (SIM || performance.now() - hr.at < 5000);
+const hrLost = () => !SIM && (!hr.value || performance.now() - hr.at > 15000);
+
+// ---------------------------------------------------------------- wake lock + GPS
+let wakeLock = null;
+async function keepAwake() {
+  try { if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); } catch {}
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && R && !R.finished) keepAwake();
+});
+
+let gpsWatch = null, lastPos = null;
+function haversine(a, b) {
+  const rad = x => x * Math.PI / 180, R0 = 6371000;
+  const dLat = rad(b.latitude - a.latitude), dLon = rad(b.longitude - a.longitude);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.latitude)) * Math.cos(rad(b.latitude)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R0 * Math.asin(Math.sqrt(h));
+}
+function startGps() {
+  if (SIM || !settings.gps || !navigator.geolocation) return;
+  lastPos = null;
+  gpsWatch = navigator.geolocation.watchPosition(pos => {
+    const c = pos.coords;
+    if (c.accuracy > 30) return;
+    if (lastPos && R && !R.paused) {
+      const d = haversine(lastPos, c);
+      if (d < 3) return;                // ignore jitter while standing still
+      if (d < 100) R.distance += d;     // ignore GPS jumps
+    }
+    lastPos = c;
+  }, () => {}, { enableHighAccuracy: true, maximumAge: 0 });
+}
+function stopGps() { if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch); gpsWatch = null; }
+
+// ---------------------------------------------------------------- run engine
+let R = null, timer = null;
+
+function startRun() {
+  if (!selected) return;
+  const starts = [];
+  let total = 0;
+  for (const seg of selected.segs) { starts.push(total); total += segSeconds(seg); }
+  R = {
+    ...selected, starts, total, s: 0, segIdx: -1, phase: "jog", phaseSince: 0, over: 0, under: 0,
+    startTs: performance.now(), pausedMs: 0, paused: false, pauseTs: 0, finished: false,
+    zoneSec: [0, 0, 0, 0, 0, 0], hrSum: 0, hrN: 0, maxHr: 0, distance: 0, walkBreaks: 0,
+    test: null, lastSay: -99, lastAdvice: -99, lostAnnounced: false,
+    nextTime: settings.timeEvery * 60, nextHr: settings.hrEvery * 60 + 30, nextEnc: 7 * 60 + 15,
+  };
+  show("run");
+  $("runControls").hidden = false;
+  $("finished").hidden = true;
+  $("runLabel").textContent = R.label;
+  keepAwake();
+  startGps();
+  say(`Starting ${R.label.replace(" ·", ",")}. ${Math.round(total / 60)} minutes. Let's go!`);
+  timer = setInterval(tick, 250 / SPEED);
+  tick();
+}
+
+function tick() {
+  if (!R || R.paused || R.finished) return;
+  const elapsed = Math.floor((performance.now() - R.startTs - R.pausedMs) / 1000 * SPEED);
+  while (R.s < Math.min(elapsed, R.total)) step(R.s++);
+  render();
+  if (R.s >= R.total) finishRun(true);
+}
+
+function enterSegment(i) {
+  const seg = R.segs[i], prev = R.segs[i - 1];
+  R.segIdx = i;
+  R.over = R.under = 0;
+  if (seg.kind === "runwalk") {
+    setPhase("jog");
+    say(prev?.kind === "free"
+      ? `Back to easy run-walk for ${seg.min} minutes. Slow jog, I'll tell you when to walk.`
+      : `${seg.min} minutes of run-walk. Start with a slow jog, I'll tell you when to walk.`);
+  } else if (seg.kind === "warmup") {
+    R.phase = "warmup";
+    say(`Warm up. ${seg.min} minutes of easy walking or very slow jogging.`);
+  } else if (seg.kind === "steady") {
+    R.phase = "steady";
+    R.test = { start: R.distance, hrSum: 0, hrN: 0 };
+    say(`Aerobic test starts now. ${seg.min} minutes. Keep your heart rate around ${settings.testTarget}. Walking is fine.`, true);
+  } else if (seg.kind === "free") {
+    R.phase = "free";
+    say(`Fun part! ${seg.min} minutes at whatever feels good. Runner's high allowed.`, true);
+  } else if (seg.kind === "strides") {
+    R.phase = "recover";
+    say(`Strides time. ${seg.reps} short, quick and relaxed bursts of 20 seconds.`);
+  } else if (seg.kind === "walk") {
+    R.phase = "walk";
+    say(`${seg.min} minutes of easy walking. Enjoy the views.`);
+  }
+}
+
+function setPhase(p, text) {
+  if (p === "walk" && R.phase === "jog") R.walkBreaks++;
+  R.phase = p;
+  R.phaseSince = R.s;
+  R.over = R.under = 0;
+  if (text) say(text, true);
+}
+
+function step(s) {
+  let i = R.starts.length - 1;
+  while (R.starts[i] > s) i--;
+  if (i !== R.segIdx) {
+    if (R.segs[R.segIdx]?.kind === "steady") announceTest();
+    enterSegment(i);
+  }
+  const seg = R.segs[i], segT = s - R.starts[i];
+  if (SIM) simulate();
+  const bpm = hrFresh() ? hr.value : null;
+
+  // heart rate lost / back
+  if (hr.at && hrLost() && !R.lostAnnounced) { R.lostAnnounced = true; say("Heart rate lost. Switching to timed intervals.", true); }
+  if (!hrLost() && R.lostAnnounced) { R.lostAnnounced = false; say("Heart rate is back."); }
+
+  if (seg.kind === "runwalk") {
+    const age = s - R.phaseSince;
+    if (bpm) {
+      if (R.phase === "jog") {
+        R.over = bpm >= settings.walkAt ? R.over + 1 : 0;
+        if (R.over >= 3 && age >= 30) setPhase("walk", `Walk now. Heart rate ${bpm}.`);
+      } else {
+        R.under = bpm <= settings.jogAt ? R.under + 1 : 0;
+        if (R.under >= 3 && age >= 30) setPhase("jog", "Jog again. Nice and slow.");
+      }
+    } else if (hrLost()) {
+      if (R.phase === "jog" && age >= settings.fbJog) setPhase("walk", "Walk now.");
+      else if (R.phase === "walk" && age >= settings.fbWalk) setPhase("jog", "Jog again. Nice and slow.");
+    }
+  } else if (seg.kind === "steady" && bpm && s - R.lastAdvice >= 45) {
+    if (bpm > settings.testTarget + 4) { say(`Ease off a little. Heart rate ${bpm}.`, true); R.lastAdvice = s; }
+    else if (bpm < settings.testTarget - 6) { say(`You can pick it up slightly. Heart rate ${bpm}.`); R.lastAdvice = s; }
+  } else if (seg.kind === "warmup" && bpm && bpm >= settings.walkAt && s - R.lastAdvice >= 60) {
+    say("Easy, it's only the warm-up. Slow down a little.", true); R.lastAdvice = s;
+  } else if (seg.kind === "free" && bpm && zoneOf(bpm) === 5 && s - R.lastAdvice >= 60) {
+    say("That's zone 5. Back off a touch.", true); R.lastAdvice = s;
+  } else if (seg.kind === "strides") {
+    const t = segT % STRIDE_CYCLE, rep = Math.floor(segT / STRIDE_CYCLE) + 1;
+    if (t === 0) setPhase("stride", `Stride ${rep} of ${seg.reps}. Quick and relaxed. Go!`);
+    else if (t === STRIDE_ON) setPhase("recover", "And ease off. Walk and recover.");
+  }
+
+  // stats for this second
+  if (bpm) {
+    R.zoneSec[zoneOf(bpm)]++;
+    R.hrSum += bpm; R.hrN++;
+    R.maxHr = Math.max(R.maxHr, bpm);
+    if (seg.kind === "steady") { R.test.hrSum += bpm; R.test.hrN++; }
+  }
+
+  // regular cues, never on top of another one
+  const left = R.total - s;
+  if (left === 60) say("One minute to go!");
+  else if (R.total >= 600 && s === Math.floor(R.total / 2)) say("Halfway there. Nice work.");
+  else if (s - R.lastSay >= 8) {
+    if (settings.timeCues && s >= R.nextTime) {
+      R.nextTime += settings.timeEvery * 60;
+      if (left >= 120) say(`${Math.round(s / 60)} minutes done, ${Math.round(left / 60)} to go.`);
+    } else if (settings.hrCues && s >= R.nextHr) {
+      R.nextHr += settings.hrEvery * 60;
+      if (bpm) say(`Heart rate ${bpm}, zone ${zoneOf(bpm)}.`);
+    } else if (settings.enc && s >= R.nextEnc) {
+      R.nextEnc += 7 * 60;
+      say(CHEERS[Math.floor(Math.random() * CHEERS.length)]);
+    }
+  }
+}
+
+function announceTest() {
+  if (!R.test) return;
+  const km = (R.distance - R.test.start) / 1000;
+  const avg = R.test.hrN ? Math.round(R.test.hrSum / R.test.hrN) : null;
+  R.test.distanceM = R.distance - R.test.start;
+  R.test.avgHr = avg;
+  say(`Test done. ${km.toFixed(2)} kilometres${avg ? ` at an average heart rate of ${avg}` : ""}. Write that down!`, true);
+}
+
+// simulator: heart rate drifts toward a target that depends on what you're doing
+function simulate() {
+  const target = { jog: 162, stride: 172, free: 168, steady: 152, warmup: 128, walk: 126, recover: 130 }[R.phase] ?? 130;
+  const base = hr.value || 90;
+  onHeartRate(Math.round(base + (target - base) * 0.08 + (Math.random() - 0.5) * 3));
+  R.distance += { jog: 2.3, stride: 3.6, free: 2.8, steady: 2.0, warmup: 1.5, walk: 1.5, recover: 1.4 }[R.phase] ?? 1.5;
+}
+
+const fmt = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
+const CUE_TEXT = { jog: "JOG", walk: "WALK", warmup: "WARM UP", free: "FREE RUN", stride: "STRIDE!", recover: "RECOVER" };
+
+function render() {
+  const seg = R.segs[R.segIdx] || R.segs[0];
+  const bpm = hrFresh() ? hr.value : null;
+  const z = zoneOf(bpm);
+  const cue = R.phase === "steady" ? `HOLD ${settings.testTarget}` : CUE_TEXT[R.phase];
+  let sub = "";
+  if (seg.kind === "runwalk") sub = hrLost() ? "timed intervals (no HR)" : R.phase === "jog" ? `walk at ${settings.walkAt}` : `jog at ${settings.jogAt}`;
+  else if (R.phase === "steady") sub = "aerobic test";
+  $("cue").textContent = R.paused ? "PAUSED" : cue;
+  $("cue").style.color = R.phase === "walk" || R.phase === "recover" ? "var(--z2)" : "var(--text)";
+  $("cueSub").textContent = sub;
+  $("segLabel").textContent = describeSeg(seg);
+  $("hrBig").textContent = bpm ?? "--";
+  $("hrBig").style.color = bpm ? `var(--z${z})` : "var(--muted)";
+  $("zoneBadge").textContent = bpm ? `Zone ${z}` : "no HR";
+  $("zoneBadge").style.background = `var(--z${z})`;
+  $("progress").style.width = `${(R.s / R.total) * 100}%`;
+  $("elapsed").textContent = fmt(R.s);
+  $("remaining").textContent = fmt(R.total - R.s);
+  $("dist").textContent = (R.distance / 1000).toFixed(2);
+  $("lockHr").textContent = bpm ?? "--";
+  $("lockHr").style.color = bpm ? `var(--z${z})` : "var(--muted)";
+  $("lockCue").textContent = $("cue").textContent;
+}
+
+function finishRun(completed) {
+  if (!R || R.finished) return;
+  if (R.segs[R.segIdx]?.kind === "steady" && completed) announceTest();
+  R.finished = true;
+  clearInterval(timer);
+  stopGps();
+  try { wakeLock?.release(); } catch {}
+  $("lock").hidden = true;
+  const record = {
+    date: new Date().toISOString(), label: R.label, planKey: R.planKey, completed,
+    durationSec: R.s, distanceM: Math.round(R.distance), avgHr: R.hrN ? Math.round(R.hrSum / R.hrN) : null,
+    maxHr: R.maxHr || null, zoneSec: R.zoneSec, walkBreaks: R.walkBreaks,
+    test: R.test && R.test.distanceM !== undefined ? { distanceM: Math.round(R.test.distanceM), avgHr: R.test.avgHr } : null,
+  };
+  if (R.s >= 60) { history.unshift(record); store.set("history", history); }
+  say(completed ? "Session complete! Brilliant work. Walk it out and stretch." : "Run ended. Nice effort.");
+  $("summaryText").textContent = summaryText(record);
+  $("runControls").hidden = true;
+  $("finished").hidden = false;
+  render();
+}
+
+function summaryText(r) {
+  const mins = s => `${Math.round(s / 60)}m`;
+  const zoned = r.zoneSec.reduce((a, b) => a + b, 0);
+  const easy = zoned ? Math.round((r.zoneSec[0] + r.zoneSec[1] + r.zoneSec[2]) / zoned * 100) : null;
+  return [
+    `Run Coach – ${r.label} – ${r.date.slice(0, 10)}${r.completed ? "" : " (ended early)"}`,
+    `Time ${fmt(r.durationSec)} · Distance ${(r.distanceM / 1000).toFixed(2)} km` +
+      (r.avgHr ? ` · Avg HR ${r.avgHr} (max ${r.maxHr})` : ""),
+    zoned ? `Zones: Z1 ${mins(r.zoneSec[1])} · Z2 ${mins(r.zoneSec[2])} · Z3 ${mins(r.zoneSec[3])} · Z4 ${mins(r.zoneSec[4])} · Z5 ${mins(r.zoneSec[5])} (${easy}% in Zone 2 or below)` : "No heart rate recorded",
+    `Walk breaks: ${r.walkBreaks}`,
+    r.test ? `Aerobic test: ${(r.test.distanceM / 1000).toFixed(2)} km in 20 min${r.test.avgHr ? ` at avg HR ${r.test.avgHr}` : ""}` : "",
+  ].filter(Boolean).join("\n");
+}
+
+function togglePause() {
+  if (!R || R.finished) return;
+  R.paused = !R.paused;
+  if (R.paused) { R.pauseTs = performance.now(); say("Paused."); }
+  else { R.pausedMs += performance.now() - R.pauseTs; say("Resuming. Let's go."); }
+  $("pauseBtn").textContent = R.paused ? "Resume" : "Pause";
+  render();
+}
+
+// pocket lock: press and hold to unlock
+let holdTimer = null;
+$("lockBtn").onclick = () => { $("lock").hidden = false; };
+const ring = $("lockRing");
+ring.addEventListener("pointerdown", () => {
+  ring.classList.add("holding");
+  holdTimer = setTimeout(() => { $("lock").hidden = true; ring.classList.remove("holding"); }, 1500);
+});
+["pointerup", "pointerleave", "pointercancel"].forEach(ev => ring.addEventListener(ev, () => {
+  clearTimeout(holdTimer); ring.classList.remove("holding");
+}));
+
+// ---------------------------------------------------------------- screens
+function show(id) {
+  for (const m of ["home", "run", "settings"]) $(m).hidden = m !== id;
+  window.scrollTo(0, 0);
+}
+
+function renderHome() {
+  if (!selected) { const k = nextPlanKey(); k ? selectPlan(k) : selectFree(30); return; }
+  $("selLabel").textContent = selected.label;
+  const totalMin = Math.round(selected.segs.reduce((a, s) => a + segSeconds(s), 0) / 60);
+  $("selDesc").textContent = `${describe(selected.segs)} · ${totalMin} min`;
+
+  const done = doneKeys(), next = nextPlanKey();
+  $("planGrid").innerHTML = PLAN.map((_, w) => `<div class="week"><span class="muted">Week ${w + 1}</span>` +
+    [..."ABC"].map(l => {
+      const key = `${w + 1}${l}`;
+      const cls = ["chip", done.has(key) && "done", selected.planKey === key && "sel"].filter(Boolean).join(" ");
+      return `<button class="${cls}" data-key="${key}">${done.has(key) ? "✓ " : ""}${l}${key === next ? " •" : ""}</button>`;
+    }).join("") + "</div>").join("");
+  $("planGrid").querySelectorAll("[data-key]").forEach(b => b.onclick = () => selectPlan(b.dataset.key));
+
+  $("history").innerHTML = history.length ? history.slice(0, 20).map((r, i) => `
+    <div class="card history-item"><div><b>${r.label}</b><br><span class="muted">${r.date.slice(0, 10)} · ${fmt(r.durationSec)}` +
+      `${r.avgHr ? ` · ${r.avgHr} bpm` : ""}${r.distanceM ? ` · ${(r.distanceM / 1000).toFixed(2)} km` : ""}</span></div>
+      <button data-copy="${i}">Copy</button></div>`).join("") : `<p class="muted">No runs yet.</p>`;
+  $("history").querySelectorAll("[data-copy]").forEach(b => b.onclick = () => copy(summaryText(history[b.dataset.copy]), b));
+}
+
+async function copy(text, btn) {
+  try { await navigator.clipboard.writeText(text); btn.textContent = "Copied ✓"; }
+  catch { prompt("Copy this:", text); }
+}
+
+function renderSettings() {
+  $("zoneFields").innerHTML = [1, 2, 3, 4, 5].map(z =>
+    `<label${z === 5 ? ' style="border:0"' : ""}>Zone ${z} starts at <input type="number" data-k="z${z}"></label>`).join("");
+  document.querySelectorAll("#settings [data-k]").forEach(el => {
+    const v = settings[el.dataset.k];
+    if (el.type === "checkbox") el.checked = v; else el.value = v;
+  });
+}
+function saveSettings() {
+  document.querySelectorAll("#settings [data-k]").forEach(el => {
+    settings[el.dataset.k] = el.type === "checkbox" ? el.checked : Number(el.value) || DEFAULTS[el.dataset.k];
+  });
+  store.set("settings", settings);
+  show("home"); renderHome();
+}
+
+// ---------------------------------------------------------------- wiring
+$("connectBtn").onclick = connectHr;
+$("reconnectBtn").onclick = connectHr;
+$("voiceTestBtn").onclick = () => say("Hi Ruri! I'll be your running coach today.");
+$("startBtn").onclick = () => {
+  if (!SIM && !(hr.device && hr.device.gatt.connected) &&
+      !confirm("WHOOP isn't connected. Start with timed intervals instead?")) return;
+  startRun();
+};
+$("freeBtn").onclick = () => selectFree(Math.max(5, Number($("freeMin").value) || 30));
+$("pauseBtn").onclick = togglePause;
+$("endBtn").onclick = () => { if (confirm("End this run?")) finishRun(false); };
+$("doneBtn").onclick = () => { R = null; selected = null; show("home"); renderHome(); };
+$("copySummaryBtn").onclick = e => copy($("summaryText").textContent, e.target);
+$("settingsBtn").onclick = () => { renderSettings(); show("settings"); };
+$("saveSettingsBtn").onclick = saveSettings;
+$("resetSettingsBtn").onclick = () => { settings = { ...DEFAULTS }; renderSettings(); };
+$("clearHistoryBtn").onclick = () => {
+  if (confirm("Delete all saved runs?")) { history = []; store.set("history", history); show("home"); renderHome(); }
+};
+
+if (SIM) connectHr();
+setHrStatus();
+renderHome();
+if ("serviceWorker" in navigator && !SIM) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
