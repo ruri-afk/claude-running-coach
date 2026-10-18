@@ -1,0 +1,14 @@
+{
+  "name": "ruri-running",
+  "description": "Personal running coach plugin for Claude Code",
+  "owner": {
+    "name": "ruri-afk"
+  },
+  "plugins": [
+    {
+      "name": "running-coach",
+      "source": "./running-race-coach",
+      "description": "Personal running coach: aerobic base building, heart-rate-zone training plans, Whoop and Strava data import, and weekly coaching check-ins"
+    }
+  ]
+}

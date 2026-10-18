@@ -7,14 +7,14 @@ description: Downloads and syncs training data from Strava using the Strava MCP 
 
 ## Overview
 
-This skill downloads training data from Strava using the Strava MCP server and creates weekly markdown summaries in the `training-log` folder. Each week is stored as a single markdown file with detailed activity summaries, including lap details for runs marked as workouts.
+This skill downloads training data from Strava using the Strava MCP server and creates weekly markdown summaries in the `~/running-coach/training-log` folder. Each week is stored as a single markdown file with detailed activity summaries, including lap details for runs marked as workouts.
 
 **Note**: This is a Strava-specific data import tool. The running coach system also supports:
 - Other platforms (Garmin Connect, Apple Health, Polar Flow, etc.) - athlete provides data
 - Manual training logs - athlete creates markdown files directly
 - Conversational input - athlete describes training verbally
 
-This skill uses MCP tools specific to Strava (`mcp__strava__*`). Similar skills could be created for other platforms using their respective APIs or MCP servers.
+This skill uses MCP tools specific to Strava (`mcp__strava__*`). For WHOOP data, use the whoop-sync skill.
 
 ## Workflow
 
@@ -205,9 +205,9 @@ Create a markdown file with the following structure, using the calculated totals
 
 ### 7. Save to training-log Folder
 
-1. Create the `training-log` folder if it doesn't exist:
+1. Create the `~/running-coach/training-log` folder if it doesn't exist (always use this home folder, not the current project):
    ```bash
-   mkdir -p training-log
+   mkdir -p ~/running-coach/training-log
    ```
 
 2. Generate filename using the week number provided by the user:
@@ -222,7 +222,7 @@ After syncing, provide a brief summary:
 - Week number
 - Number of activities synced
 - Date range covered
-- File location (e.g., `training-log/week-1.md`)
+- File location (e.g., `~/running-coach/training-log/week-1.md`)
 - Any activities that are workouts with lap details
 - Confirm that totals were calculated using Python/script
 

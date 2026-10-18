@@ -1,11 +1,11 @@
 ---
 name: training-dashboard
-description: Generate a comprehensive HTML training dashboard showing progress toward half marathon training goals. Outputs a single self-contained HTML file with retro styling, ASCII charts, weekly mileage tracking, session completion rates, pace adherence, phase progress, and coaching commentary. Use when the athlete wants to see their training progress, check if they're on track, view their training statistics, or get an overview of their plan progress. Trigger phrases include "show my dashboard", "training progress", "how am I doing", "show my stats", or any request for a training overview.
+description: Generate a comprehensive HTML training dashboard showing progress toward the athlete's training goals (a race, or aerobic base building). Outputs a single self-contained HTML file with retro styling, ASCII charts, weekly mileage tracking, session completion rates, pace adherence, phase progress, and coaching commentary. Use when the athlete wants to see their training progress, check if they're on track, view their training statistics, or get an overview of their plan progress. Trigger phrases include "show my dashboard", "training progress", "how am I doing", "show my stats", or any request for a training overview.
 ---
 
 # Training Dashboard
 
-Generate an HTML dashboard with retro styling showing comprehensive training progress toward the half marathon goal. Outputs a single HTML file saved to `dashboard.html` that can be opened in any browser.
+Generate an HTML dashboard with retro styling showing comprehensive training progress toward the athlete's goal. Outputs a single HTML file saved to `~/running-coach/dashboard.html` that can be opened in any browser.
 
 ## Dashboard Configuration
 
@@ -67,9 +67,12 @@ Before generating the dashboard, ask the user for their preferences (unless they
 ### 2. Load Training Data
 
 Read these files:
-- `training-plan.md` - Full 12-week plan structure, goals, paces
-- `training-log/week-*.md` - All completed training logs
+- `~/running-coach/profile.md` - Athlete name, units, goal, HR zones
+- `~/running-coach/training-plan.md` - Full plan structure, goals, paces or HR zones
+- `~/running-coach/training-log/week-*.md` - All completed training logs
 - Check which weeks have logs vs which are planned
+
+**Base-building plans (no race):** replace goal-time and pace-adherence sections with % of run time in Zones 1-2 per week, weekly running time, aerobic test results (pace at fixed HR over time), and average WHOOP recovery / resting HR / HRV trends if the logs include them.
 
 Extract from training-plan.md:
 - Goal: Target time, pace, distance
@@ -342,7 +345,7 @@ Combine all sections based on user configuration from step 1 using Tailwind clas
 
 ### 8. Save HTML File
 
-Write the complete HTML to `dashboard.html` in the project root directory. After saving, inform the user:
+Write the complete HTML to `~/running-coach/dashboard.html`. After saving, inform the user:
 - File location
 - How to open it (double-click or open in browser)
 - Remind them they can refresh the page after updating training logs
@@ -552,7 +555,7 @@ Just ask! "Can you regenerate with a different theme?" or "Show me the compact v
 
 ## Notes
 
-- The dashboard reads data from `training-plan.md` and `training-log/week-*.md` files
+- The dashboard reads data from `~/running-coach/training-plan.md` and `~/running-coach/training-log/week-*.md` files
 - All calculations are done fresh each time the dashboard is generated
 - The HTML file is self-contained (no external dependencies except Tailwind CDN)
 - ASCII charts are displayed in `<pre>` tags for monospace rendering
@@ -560,6 +563,6 @@ Just ask! "Can you regenerate with a different theme?" or "Show me the compact v
 - No JavaScript required - pure HTML and CSS
 - "On Track" status is subjective and based on completion rate, mileage, and pace adherence
 - Coaching commentary references actual data and provides actionable feedback
-- Save location: `dashboard.html` in project root
+- Save location: `~/running-coach/dashboard.html`
 - To view: Double-click the file or open in any web browser
 - Refresh the browser after regenerating to see updates
