@@ -8,6 +8,12 @@ client secret never ends up in a chat):
 
     python3 whoop_api.py setup
 
+No terminal (e.g. Claude Code on the web or a phone)? Store the Client ID and
+Secret as WHOOP_CLIENT_ID / WHOOP_CLIENT_SECRET environment variables, then:
+
+    python3 whoop_api.py login-start            # prints a link to open
+    python3 whoop_api.py login-finish --url "<address the browser ended up on>"
+
 Then, any time:
 
     python3 whoop_api.py status
@@ -45,6 +51,7 @@ USER_AGENT = "claude-running-coach/1.0"
 CONFIG_DIR = os.path.expanduser(os.environ.get("WHOOP_CONFIG_DIR", "~/running-coach/.whoop"))
 CREDENTIALS_FILE = os.path.join(CONFIG_DIR, "credentials.json")
 TOKENS_FILE = os.path.join(CONFIG_DIR, "tokens.json")
+PENDING_LOGIN_FILE = os.path.join(CONFIG_DIR, "pending_login.json")
 
 
 # ---------------------------------------------------------------- storage
@@ -239,12 +246,38 @@ def cmd_login(args):
         print(url + "\n")
         webbrowser.open(url)
         code = wait_for_callback(state)
+    finish_login(code)
+
+
+def finish_login(code):
     try:
         exchange_code(code)
     except urllib.error.HTTPError as e:
         sys.exit(f"Login failed: {describe_http_error(e)}")
     profile = api_get("/developer/v2/user/profile/basic")
     print(f"Connected to WHOOP as {profile.get('first_name', '')} {profile.get('last_name', '')}".rstrip())
+
+
+def cmd_login_start(args):
+    state = make_state()
+    url = authorize_url(state)
+    save_private_json(PENDING_LOGIN_FILE, {"state": state, "created": time.time()})
+    print("Open this link, log in to WHOOP and tap Allow:\n")
+    print(url + "\n")
+    print("Your browser will then try to open a http://localhost:8765/callback?code=... page that won't load.")
+    print("That's expected - copy the full address from the address bar and pass it to login-finish.")
+
+
+def cmd_login_finish(args):
+    pending = load_json(PENDING_LOGIN_FILE)
+    if not pending:
+        sys.exit("No login in progress. Run `whoop_api.py login-start` first.")
+    if time.time() - pending.get("created", 0) > 900:
+        os.remove(PENDING_LOGIN_FILE)
+        sys.exit("That login link has expired. Run `whoop_api.py login-start` again.")
+    code = code_from_redirect(args.url, pending["state"])
+    os.remove(PENDING_LOGIN_FILE)
+    finish_login(code)
 
 
 # ---------------------------------------------------------------- api
@@ -385,6 +418,13 @@ def main():
     p = sub.add_parser("login", help="Log in to WHOOP again (if the connection expired)")
     p.add_argument("--manual", action="store_true", help="Paste the redirect URL instead of using a local callback")
     p.set_defaults(func=cmd_login)
+
+    p = sub.add_parser("login-start", help="Without a terminal: print a WHOOP login link to open")
+    p.set_defaults(func=cmd_login_start)
+
+    p = sub.add_parser("login-finish", help="Without a terminal: finish login with the address the browser ended up on")
+    p.add_argument("--url", required=True, help="The full http://localhost:8765/callback?code=... address")
+    p.set_defaults(func=cmd_login_finish)
 
     p = sub.add_parser("status", help="Check the WHOOP connection")
     p.set_defaults(func=cmd_status)
