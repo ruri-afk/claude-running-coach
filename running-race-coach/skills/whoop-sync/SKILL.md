@@ -98,6 +98,12 @@ WHOOP has an official developer API (v2). Any WHOOP member can make a free perso
    - If the browser step fails, run it again with `--manual` and paste the final `http://localhost...` address back into the terminal.
 5. Run `python3 scripts/whoop_api.py status` to confirm, and note `data source: WHOOP API` in `profile.md`.
 
+**No terminal (Claude Code on the web or a phone)?** Steps 1-3 are the same, then:
+- Have them save the keys as environment variables named `WHOOP_CLIENT_ID` and `WHOOP_CLIENT_SECRET` in their cloud environment settings (the environment menu in the session's title bar → Edit). Never ask them to paste the secret into the chat. A new session picks them up.
+- In that new session, run `python3 scripts/whoop_api.py login-start` and give them the link it prints.
+- They open it, log in, tap Allow, and their browser lands on a `http://localhost:8765/callback?code=...` page that won't load. That's expected: they copy the full address from the address bar and paste it in the chat (the code in it is single-use and expires within minutes).
+- Run `python3 scripts/whoop_api.py login-finish --url "<the address they pasted>"`. It should print "Connected to WHOOP as <name>".
+
 **If they paste their Client Secret into the chat anyway**, don't repeat it back; suggest they regenerate it in the dashboard later if they're worried.
 
 **Things to know:**
