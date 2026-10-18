@@ -32,6 +32,7 @@ claude-coach/
 │       ├── whoop-sync/        # WHOOP data import skill
 │       │   ├── SKILL.md       # Import workflow and how to read WHOOP data
 │       │   └── scripts/
+│       │       ├── whoop_api.py     # Connects to the WHOOP API and downloads a week
 │       │       └── whoop_import.py  # Summarizes a WHOOP data export
 │       ├── training-dashboard/ # Training progress visualization
 │       │   └── SKILL.md       # Dashboard generation workflow

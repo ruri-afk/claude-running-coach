@@ -26,7 +26,7 @@ To get updates after changes are pushed to GitHub, run `/plugin marketplace upda
 - **Training Plan Generation**: Create personalized 5K, 10K, Half Marathon, and Marathon training plans with scientifically-backed progression and pacing
 - **Aerobic Base Building**: No race? Get a heart-rate-zone based plan to run more and get faster without leaving your easy zones
 - **Flexible Data Input**: Works with multiple training data sources:
-  - **WHOOP** (data export, screenshots, or WHOOP MCP tools if you have them) - includes HR zones, strain, recovery, HRV
+  - **WHOOP** (official WHOOP API, data export, or screenshots) - includes HR zones, strain, recovery, HRV
   - **Strava** (automatic sync via MCP server)
   - **Other platforms** (Garmin Connect, Apple Health, Polar Flow, etc.)
   - **Manual logs** (create markdown files directly)
@@ -47,7 +47,16 @@ To get updates after changes are pushed to GitHub, run `/plugin marketplace upda
 
 ### Using WHOOP
 
-No setup needed. When you want to log a week, export your data from the WHOOP app (**App Settings → Data Export**), unzip the file WHOOP emails you, and tell Claude where the folder is. You can also paste screenshots or just describe your runs.
+**Recommended: connect the WHOOP API (about 5 minutes, one time).** WHOOP lets any member create a free personal app for their own data:
+
+1. Sign in at [developer-dashboard.whoop.com](https://developer-dashboard.whoop.com) with your WHOOP login and click **Create App**
+2. Set the Redirect URL to `http://localhost:8765/callback` and pick the scopes `read:workout`, `read:recovery`, `read:cycles`, `read:sleep`, `read:profile`
+3. Copy the Client ID and Client Secret
+4. Ask Claude "connect my WHOOP" - it'll give you a one-line command to run in your terminal that saves your keys privately (in `~/running-coach/.whoop/`) and logs you in through your browser
+
+After that, saying "sync my WHOOP" pulls your runs, HR zones, strain, recovery, resting HR, HRV and sleep automatically. Limits: personal apps work for up to 10 WHOOP accounts without approval, 100 requests/minute, and the API gives per-workout summaries rather than second-by-second heart rate.
+
+**No setup option:** export your data from the WHOOP app (**App Settings → Data Export**), unzip the file WHOOP emails you, and tell Claude where the folder is. You can also paste screenshots or just describe your runs.
 
 Tell the coach your WHOOP heart rate zone ranges (in bpm) on your first session so it can check your easy runs stay in Zone 2.
 

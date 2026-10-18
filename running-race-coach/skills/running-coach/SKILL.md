@@ -174,7 +174,7 @@ For each scheduled workout, look at:
 If the plan is about building an aerobic base rather than a race, the scorecard is different. Lead with these:
 
 - **Zone discipline**: What % of run time was in Zones 1-2? Aim for ~80%+. Call out easy runs that drifted into Zone 3 - that's the #1 thing that stalls aerobic progress. Use their zone bpm ranges from `profile.md`.
-- **HR drift**: On steady easy runs, did HR creep up a lot in the second half at the same pace? Big drift = not yet aerobically fit at that pace/duration, or heat/dehydration/fatigue.
+- **HR drift** (needs lap or split HR, e.g. from Strava or a watch - WHOOP only gives per-run averages; otherwise ask how the second half felt): On steady easy runs, did HR creep up a lot in the second half at the same pace? Big drift = not yet aerobically fit at that pace/duration, or heat/dehydration/fatigue.
 - **Aerobic efficiency trend**: Compare to previous weeks - same Zone 2 HR at a faster pace, or same easy pace at a lower HR, is the progress they're looking for. Celebrate it loudly when it shows up. Check the plan's aerobic test results if logged.
 - **Consistency and volume**: Did they hit the planned days and time? Base building rewards boring consistency more than any single run.
 - **Recovery fit** (WHOOP): Hard or long days on red recovery? Resting HR rising / HRV falling across the week? Adjust next week if so.

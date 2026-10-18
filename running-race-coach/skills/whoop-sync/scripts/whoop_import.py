@@ -13,7 +13,7 @@ import csv
 import os
 import sys
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 METERS_PER_MILE = 1609.344
 
@@ -28,6 +28,12 @@ def parse_datetime(value):
         except ValueError:
             continue
     return None
+
+
+def cycle_day(started):
+    """The calendar day a WHOOP cycle belongs to. Cycles begin when you fall
+    asleep, so one starting in the evening counts as the next day."""
+    return (started + timedelta(days=1)).date() if started.hour >= 18 else started.date()
 
 
 def parse_number(value):
@@ -132,11 +138,11 @@ def load_cycles(path, start, end):
     days = []
     for row in rows:
         started = parse_datetime(row.get(cols["start"]))
-        if not started or not (start <= started.date() <= end):
+        if not started or not (start <= cycle_day(started) <= end):
             continue
         get = lambda key: parse_number(row.get(cols[key])) if cols[key] else None
         days.append({
-            "date": started.date(),
+            "date": cycle_day(started),
             "recovery": get("recovery"),
             "rhr": get("rhr"),
             "hrv": get("hrv"),
@@ -159,11 +165,11 @@ def zone_minutes(workout):
     return {z: workout["duration"] * pct / 100 for z, pct in workout["zones"].items() if pct is not None}
 
 
-def build_markdown(workouts, cycles, start, end, unit):
+def build_markdown(workouts, cycles, start, end, unit, source="WHOOP data export"):
     to_unit = (lambda m: m / METERS_PER_MILE) if unit == "mi" else (lambda m: m / 1000)
     elev_unit = "ft" if unit == "mi" else "m"
     to_elev = (lambda m: m * 3.28084) if unit == "mi" else (lambda m: m)
-    out = [f"# Training Log: {start} to {end}", "", "*Source: WHOOP data export*", "", "## Week Summary", ""]
+    out = [f"# Training Log: {start} to {end}", "", f"*Source: {source}*", "", "## Week Summary", ""]
 
     by_type = defaultdict(list)
     for w in workouts:
@@ -245,6 +251,16 @@ def build_markdown(workouts, cycles, start, end, unit):
     return "\n".join(out)
 
 
+def write_output(markdown, output, workouts, cycles):
+    if output:
+        os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
+        with open(output, "w") as f:
+            f.write(markdown)
+        print(f"Wrote {output} ({len(workouts)} workouts, {len(cycles)} days of recovery data)")
+    else:
+        print(markdown)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dir", required=True, help="Folder containing the unzipped WHOOP export CSVs")
@@ -264,13 +280,7 @@ def main():
     cycles = load_cycles(cycles_path, start, end) if os.path.exists(cycles_path) else []
 
     markdown = build_markdown(workouts, cycles, start, end, args.unit)
-    if args.output:
-        os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
-        with open(args.output, "w") as f:
-            f.write(markdown)
-        print(f"Wrote {args.output} ({len(workouts)} workouts, {len(cycles)} days of recovery data)")
-    else:
-        print(markdown)
+    write_output(markdown, args.output, workouts, cycles)
 
 
 if __name__ == "__main__":
