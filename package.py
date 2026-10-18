@@ -2,7 +2,7 @@
 import zipfile
 import os
 
-SOURCE = "running-coach"
+SOURCE = "running-race-coach"
 OUTPUT = "running-coach.zip"
 
 with zipfile.ZipFile(OUTPUT, "w", zipfile.ZIP_DEFLATED) as zf:

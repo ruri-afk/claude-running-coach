@@ -2,10 +2,31 @@
 
 An AI-powered running coach that provides personalized training plans, analyzes your workouts, and offers evidence-based coaching guidance. Built for [Claude Code](https://code.claude.com/) and [Claude Desktop](https://claude.ai/download) using the [Skills framework](https://code.claude.com/docs/skills). Packaged as a plugin for easy installation.
 
+## Install in Claude Code
+
+Run this inside Claude Code (any folder):
+
+```
+/plugin install running-coach --marketplace ruri-afk/claude-running-coach
+```
+
+On older Claude Code versions, use the two-step version instead:
+
+```
+/plugin marketplace add ruri-afk/claude-running-coach
+/plugin install running-coach@ruri-running
+```
+
+Then restart Claude Code. The coach is now available in every session - just say **"running"** (or talk about a run) and it will pick up where you left off. Your plan, logs, and coaching notes are kept in `~/running-coach/` so every session sees the same history.
+
+To get updates after changes are pushed to GitHub, run `/plugin marketplace update ruri-running`.
+
 ## Features
 
 - **Training Plan Generation**: Create personalized 5K, 10K, Half Marathon, and Marathon training plans with scientifically-backed progression and pacing
+- **Aerobic Base Building**: No race? Get a heart-rate-zone based plan to run more and get faster without leaving your easy zones
 - **Flexible Data Input**: Works with multiple training data sources:
+  - **WHOOP** (data export, screenshots, or WHOOP MCP tools if you have them) - includes HR zones, strain, recovery, HRV
   - **Strava** (automatic sync via MCP server)
   - **Other platforms** (Garmin Connect, Apple Health, Polar Flow, etc.)
   - **Manual logs** (create markdown files directly)
@@ -24,6 +45,12 @@ An AI-powered running coach that provides personalized training plans, analyzes 
 
 ## Setup
 
+### Using WHOOP
+
+No setup needed. When you want to log a week, export your data from the WHOOP app (**App Settings → Data Export**), unzip the file WHOOP emails you, and tell Claude where the folder is. You can also paste screenshots or just describe your runs.
+
+Tell the coach your WHOOP heart rate zone ranges (in bpm) on your first session so it can check your easy runs stay in Zone 2.
+
 ### 1. (Optional) Configure Strava MCP Server
 
 If you want automatic Strava sync, add the Strava MCP server to your Claude Code configuration (`~/.claude/config.json`):
@@ -40,7 +67,7 @@ If you want automatic Strava sync, add the Strava MCP server to your Claude Code
 ```
 
 **Note**: This step is optional. You can use Claude Coach without Strava by:
-- Manually creating training log files in the `training-log/` folder
+- Manually creating training log files in the `~/running-coach/training-log/` folder
 - Providing data from other platforms (Garmin, Apple Health, etc.)
 - Describing your training conversationally
 

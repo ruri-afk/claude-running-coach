@@ -1,10 +1,10 @@
 {
   "name": "running-coach",
-  "description": "A running coach plugin that builds tailored training plans, uses Strava to track your progress and provides advice and plan adaptation as you pursue your goals",
-  "version": "1.0.0",
+  "description": "A running coach plugin that builds tailored training plans (race goals or aerobic base building), imports training data from Whoop or Strava, and provides advice and plan adaptation as you pursue your goals",
+  "version": "1.1.0",
   "author": {
     "name": "Colin Eberhardt"
   },
-  "homepage": "https://github.com/ColinEberhardt/claude-running-coach",
+  "homepage": "https://github.com/ruri-afk/claude-running-coach",
   "license": "MIT"
 }

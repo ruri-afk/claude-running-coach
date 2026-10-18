@@ -2,13 +2,14 @@
 
 An AI-powered running coach built for [Claude Code](https://code.claude.com/) and [Claude Desktop](https://claude.ai/download) using the [Skills framework](https://code.claude.com/docs/skills). This project demonstrates how to combine Claude's capabilities with specialized training knowledge and training data to provide personalized running coaching assistance. Distributed as a plugin for easy installation.
 
-**For usage instructions, see [running-race-coach/README.md](running-race-coach/README.md).**
+**To install in Claude Code:** `/plugin install running-coach --marketplace ruri-afk/claude-running-coach` (see [running-race-coach/README.md](running-race-coach/README.md) for full usage instructions).
 
 ## Overview
 
 Claude Running Race Coach uses Claude Code's Skills framework to provide intelligent running coaching that includes:
 - Evidence-based training plan generation
-- Multi-platform training data integration (Strava, Garmin, manual entry, conversational)
+- Aerobic base building plans driven by heart rate zones (for runners without a race)
+- Multi-platform training data integration (WHOOP, Strava, Garmin, manual entry, conversational)
 - Weekly training analysis and coaching feedback
 - Scientific pace calculation and workout planning
 
@@ -28,16 +29,21 @@ claude-coach/
 │       │       └── interval_calculator.py
 │       ├── strava-sync/       # Strava data synchronization skill
 │       │   └── SKILL.md       # Sync workflow and formatting
+│       ├── whoop-sync/        # WHOOP data import skill
+│       │   ├── SKILL.md       # Import workflow and how to read WHOOP data
+│       │   └── scripts/
+│       │       └── whoop_import.py  # Summarizes a WHOOP data export
 │       ├── training-dashboard/ # Training progress visualization
 │       │   └── SKILL.md       # Dashboard generation workflow
 │       └── running-coach/     # Weekly coaching analysis skill
 │           └── SKILL.md       # Coaching workflow and principles
-├── training-log/              # Generated weekly training summaries
-├── coaching-log/              # Coaching session notes
-├── training-plan.md          # Generated training plans
+├── .claude-plugin/
+│   └── marketplace.json       # Lets Claude Code install the plugin from this repo
 ├── package.py                # Plugin packaging script
 └── README.md                 # This file
 ```
+
+Your personal data (plan, `training-log/`, `coaching-log/`, `profile.md`) is stored in `~/running-coach/`, outside the repo, so it's shared across every Claude Code session.
 
 ## Skills Architecture
 
@@ -82,7 +88,7 @@ When a user requests a training plan:
 4. Applies periodization principles from `coaches-guide.md`
 5. Generates structured markdown training plan
 6. Uses `interval_calculator.py` to calculate workout distances
-7. Saves plan to `training-plan.md`
+7. Saves plan to `~/running-coach/training-plan.md`
 
 ### Training Data Synchronization
 
@@ -92,7 +98,7 @@ The **strava-sync** skill:
 3. Extracts detailed metrics (pace, heart rate, power, cadence, elevation)
 4. Parses lap data for interval workouts
 5. Formats data as structured markdown
-6. Saves to `training-log/week-n.md`
+6. Saves to `~/running-coach/training-log/week-n.md`
 
 The system is flexible and also supports:
 - Manual markdown file creation
@@ -113,7 +119,7 @@ The **running-coach** skill:
    - Weekly volume and progression
 6. Assesses progress toward race goal
 7. Provides specific recommendations
-8. Documents session in `coaching-log/week-n-coaching-notes.md`
+8. Documents session in `~/running-coach/coaching-log/week-n-coaching-notes.md`
 
 ## Development Setup
 

@@ -1,13 +1,15 @@
 ---
 name: training-plan
-description: Create personalized training plans for 5K, 10K, Half Marathon, and Marathon races. Use when the user requests a training plan for any of these distances, wants to prepare for a race, or asks for a structured running program. This skill generates comprehensive markdown training plans that include race goals, training paces, phased progression, and week-by-week workout schedules.
+description: Create personalized training plans for 5K, 10K, Half Marathon, and Marathon races, or heart-rate-zone based aerobic base building plans for runners with no race who want to run more and get fitter. Use when the user requests a training plan for any of these distances, wants to prepare for a race, wants to build their aerobic base or run more without overdoing it, or asks for a structured running program. This skill generates comprehensive markdown training plans that include race goals, training paces, phased progression, and week-by-week workout schedules.
 ---
 
 # Training Plan Creator
 
 ## Overview
 
-This skill creates personalized, evidence-based training plans for 5K, 10K, Half Marathon, and Marathon distances. Plans are delivered as structured markdown documents with clear progression, appropriate training intensities, and race-specific preparation.
+This skill creates personalized, evidence-based training plans for 5K, 10K, Half Marathon, and Marathon distances, plus open-ended **aerobic base building** plans for athletes without a race (see "Base-Building Plans" below).
+
+**Save location**: Always save the plan to `~/running-coach/training-plan.md` (create the folder if needed) so it's available from every Claude Code session. Read `~/running-coach/profile.md` first if it exists - it may already answer most of the questions below. Plans are delivered as structured markdown documents with clear progression, appropriate training intensities, and race-specific preparation.
 
 ## Workflow
 
@@ -32,6 +34,31 @@ Before creating a plan, collect these key details from the user:
 - If target time is not provided, ask about recent race performance or typical training paces
 - If training days are unclear, suggest 4-5 days as a reasonable starting point
 - If race date creates a very short timeline (< 8 weeks for marathon), flag this concern
+
+### Base-Building Plans (No Race)
+
+If the athlete has no race and wants to run more, build their aerobic base, or improve pace without overdoing it, use this path instead of the race steps below. The plan is built around **heart rate zones**, not paces.
+
+**Gather (one question at a time, skip anything already in `profile.md`):**
+- Current running: days per week, typical run length (time or distance), longest recent run
+- Days available per week
+- Their HR zone ranges in bpm (from the WHOOP app or their device) or max HR. If unknown, use effort/talk test until they have them
+- Any recent race or time trial result (optional - used only to show reference paces)
+- Injury history and other training (e.g. lifting)
+
+**Plan design:**
+- **Length**: 8-12 week block, ending with an easier week; at the end, review and build the next block.
+- **Intensity**: ~80-90% of running time in Zones 1-2. Easy runs and long runs are capped at the top of Zone 2 - slowing down, or walking briefly on hills, to stay in zone is expected and correct.
+- **Quality**: First 3-4 weeks: no hard sessions, just easy running plus 4-6 relaxed **strides** (20 sec quick-but-relaxed, full recovery) 1-2x/week. After that, add at most one moderate session per week (e.g. short tempo/threshold segments in Zone 3-4, or hill strides). This builds pace without wrecking the aerobic focus.
+- **Volume progression**: grow weekly running time by ~5-10% per week, 3 build weeks then 1 lighter week (~20-30% less). Grow the long run gradually to ~25-30% of weekly time. Add a run day before making individual runs much longer.
+- **Write workouts in time + zone**, e.g. "Easy 40 min, Zone 2 (HR 130-145) + 6 strides". Distance-based interval rules below apply only to the occasional quality session.
+- **Aerobic test** every 4 weeks (week 1, 4/5, 8/9...): after a 10 min easy warm-up, run 20-30 min on a flat route or treadmill holding a fixed HR near the top of Zone 2; record average pace. Same HR, faster pace over time = aerobic base improving. This is how pace improves without chasing it.
+- **WHOOP recovery rule** (if they use WHOOP): green = as planned; yellow = do it, but keep it easy and cut 10-20% if tired; red = rest, walk, or very easy 20-30 min.
+- If they lift or cross-train, place it on easy days or after easy runs, not before long runs or quality days.
+
+**Output**: Use the template in step 7 but replace "Goal Summary" with the athlete's base-building goals, replace the "Training Paces" table with a **Heart Rate Zones** table (zone, bpm range, purpose, how it feels), add an **Aerobic Test Log** table (date, HR, pace, notes) for them to fill in, and use time-based weekly volume. Include every week. Optionally run `calculate_paces.py` from a recent race/time trial to show reference easy/threshold paces, but make clear HR leads.
+
+Then skip to step 7 to write the file.
 
 ### 2. Calculate Training Paces
 
@@ -215,7 +242,7 @@ TOTAL TIME:     1:01:15
 
 ### 7. Generate the training-plan.md Output
 
-Create a comprehensive markdown document with the following structure:
+Save to `~/running-coach/training-plan.md`. If a plan already exists there, ask before replacing it (offer to save the old one as `training-plan-<date>.md`). Create a comprehensive markdown document with the following structure:
 
 ```markdown
 # Training Plan: [Race Distance] in [Number] Weeks
