@@ -45,6 +45,7 @@ USER_AGENT = "claude-running-coach/1.0"
 CONFIG_DIR = os.path.expanduser(os.environ.get("WHOOP_CONFIG_DIR", "~/running-coach/.whoop"))
 CREDENTIALS_FILE = os.path.join(CONFIG_DIR, "credentials.json")
 TOKENS_FILE = os.path.join(CONFIG_DIR, "tokens.json")
+PENDING_STATE_FILE = os.path.join(CONFIG_DIR, "pending_login.json")
 
 
 # ---------------------------------------------------------------- storage
@@ -227,8 +228,22 @@ def cmd_setup(args):
 
 
 def cmd_login(args):
+    if args.redirect_url:
+        # Second half of a two-step login (e.g. a cloud session with no browser).
+        pending = load_json(PENDING_STATE_FILE)
+        if not pending:
+            sys.exit("No login in progress. Run `whoop_api.py login --print-url` first.")
+        code = code_from_redirect(args.redirect_url, pending["state"])
+        os.remove(PENDING_STATE_FILE)
+        finish_login(code)
+        return
     state = make_state()
     url = authorize_url(state)
+    if args.print_url:
+        # First half of a two-step login: remember the state so --redirect-url can finish it later.
+        save_private_json(PENDING_STATE_FILE, {"state": state})
+        print(url)
+        return
     if args.manual:
         print("Open this link, approve access, then paste the full address your browser ends up on")
         print("(it starts with http://localhost and the page may say it can't connect - that's fine):\n")
@@ -239,6 +254,10 @@ def cmd_login(args):
         print(url + "\n")
         webbrowser.open(url)
         code = wait_for_callback(state)
+    finish_login(code)
+
+
+def finish_login(code):
     try:
         exchange_code(code)
     except urllib.error.HTTPError as e:
@@ -384,6 +403,9 @@ def main():
 
     p = sub.add_parser("login", help="Log in to WHOOP again (if the connection expired)")
     p.add_argument("--manual", action="store_true", help="Paste the redirect URL instead of using a local callback")
+    p.add_argument("--print-url", action="store_true",
+                   help="Two-step login, part 1: print the approval link and exit")
+    p.add_argument("--redirect-url", help="Two-step login, part 2: the http://localhost... address after approving")
     p.set_defaults(func=cmd_login)
 
     p = sub.add_parser("status", help="Check the WHOOP connection")

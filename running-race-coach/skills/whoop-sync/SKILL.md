@@ -98,6 +98,12 @@ WHOOP has an official developer API (v2). Any WHOOP member can make a free perso
    - If the browser step fails, run it again with `--manual` and paste the final `http://localhost...` address back into the terminal.
 5. Run `python3 scripts/whoop_api.py status` to confirm, and note `data source: WHOOP API` in `profile.md`.
 
+**Cloud sessions (no browser, credentials in `WHOOP_CLIENT_ID` / `WHOOP_CLIENT_SECRET` env vars):** skip `setup` and do a two-step login yourself:
+1. `python3 scripts/whoop_api.py login --print-url` and give the athlete the link.
+2. They approve it; the browser lands on a `http://localhost:8765/callback?...` page that won't load - that's fine. Ask them to paste that whole address back.
+3. `python3 scripts/whoop_api.py login --redirect-url "<pasted address>"` (it's single use and expires in minutes, so run it straight away).
+Tokens live in the session's container, so a new cloud session needs this login again.
+
 **If they paste their Client Secret into the chat anyway**, don't repeat it back; suggest they regenerate it in the dashboard later if they're worried.
 
 **Things to know:**
